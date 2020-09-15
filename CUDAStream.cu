@@ -163,17 +163,21 @@ void CUDAStream<T>::add()
 }
 
 template <typename T>
-__global__ void triad_kernel(T * a, const T * b, const T * c)
+__global__ void triad_kernel(T * a, const T * b, const T * c, unsigned int array_size)
 {
   const T scalar = startScalar;
   const int i = blockDim.x * blockIdx.x + threadIdx.x;
-  a[i] = b[i] + scalar * c[i];
+  for (int z = 0; z < NUM_ITERS; ++z){ 
+      for (int j = i; j < array_size; j += blockDim.x){ 
+          a[j] = b[j] + scalar * c[j];
+      }
+  }  
 }
 
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c);
+  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
   check_error();
   cudaDeviceSynchronize();
   check_error();
