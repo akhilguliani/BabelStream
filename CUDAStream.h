@@ -17,8 +17,8 @@
 
 #define TBSIZE 1024
 #define DOT_NUM_BLOCKS 256
-#define NUM_ITERS 100
-#define NUM_OPS 3
+#define NUM_ITERS 200
+#define NUM_OPS 8
 
 template <class T>
 class CUDAStream : public Stream<T>
