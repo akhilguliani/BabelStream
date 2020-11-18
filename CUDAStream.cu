@@ -24,7 +24,7 @@ CUDAStream<T>::CUDAStream(const unsigned int ARRAY_SIZE, const int device_index)
 
   // The array size must be divisible by TBSIZE for kernel launches
   if (ARRAY_SIZE % TBSIZE != 0)
-  {
+  {  
     std::stringstream ss;
     ss << "Array size must be a multiple of " << TBSIZE;
     throw std::runtime_error(ss.str());
@@ -164,12 +164,14 @@ void CUDAStream<T>::add()
 
 template <typename T>
 __global__ void triad_kernel(T * a, const T * b, const T * c, unsigned int array_size)
+// __global__ void triad_kernel(T * a, const T * b, const T * c, unsigned int array_size, unsigned long long int *access)
 {
   const T scalar = startScalar;
   const int i = blockDim.x * blockIdx.x + threadIdx.x;
   for (int z = 0; z < NUM_ITERS; ++z){ 
-      for (int j = i; j < array_size; j += blockDim.x){ 
+      for (int j = i; j < array_size; j += blockDim.x*gridDim.x){ 
           a[j] = b[j] + scalar * c[j];
+//          atomicAdd(access, 3);
       }
   }  
 }
@@ -177,10 +179,23 @@ __global__ void triad_kernel(T * a, const T * b, const T * c, unsigned int array
 template <class T>
 void CUDAStream<T>::triad()
 {
-  triad_kernel<<<array_size/TBSIZE, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  // unsigned long long int a=0, *access;
+  // cudaMalloc((void**) &access, sizeof(unsigned long long int));
+  // check_error();
+  // cudaMemcpy(access, &a, sizeof(unsigned long long int), cudaMemcpyHostToDevice);
+  // check_error();
+  // triad_kernel<<<array_size/(NUM_OPS*TBSIZE), TBSIZE>>>(d_a, d_b, d_c, array_size, access);
+  if (array_size == 536870912){ 
+	triad_kernel<<<(array_size/(NUM_OPS*TBSIZE))-96, TBSIZE>>>(d_a, d_b, d_c, array_size);
+  }else{
+	triad_kernel<<<array_size/(NUM_OPS*TBSIZE), TBSIZE>>>(d_a, d_b, d_c, array_size);
+  }
   check_error();
   cudaDeviceSynchronize();
   check_error();
+  // cudaMemcpy(&a, access, sizeof(unsigned long long int), cudaMemcpyDeviceToHost);
+  
+  // std::cout<<"Number of accesses per run: "<< a <<std::endl;
 }
 
 template <class T>

@@ -379,6 +379,7 @@ void run_triad()
   std::chrono::high_resolution_clock::time_point t1, t2;
 
   // Run triad in loop
+  unsigned long long int access = 0;
   t1 = std::chrono::high_resolution_clock::now();
   for (unsigned int k = 0; k < num_times; k++)
   {
@@ -395,6 +396,10 @@ void run_triad()
 
   // Display timing results
   double total_bytes = 3 * sizeof(T) * ARRAY_SIZE * num_times;
+  // double total_bytes = sizeof(T) * num_times * 503316480;
+  #ifdef CUDA
+  total_bytes = NUM_ITERS * total_bytes;
+  #endif
   double bandwidth = ((mibibytes) ? pow(2.0, -30.0) : 1.0E-9) * (total_bytes / runtime);
 
   if (output_as_csv)
@@ -420,6 +425,8 @@ void run_triad()
   {
     std::cout
       << "--------------------------------"
+      << std::endl << std::fixed
+      << "Multipler: " << std::left << total_bytes
       << std::endl << std::fixed
       << "Runtime (seconds): " << std::left << std::setprecision(5)
       << runtime << std::endl
